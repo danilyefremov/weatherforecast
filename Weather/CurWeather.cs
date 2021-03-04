@@ -25,9 +25,8 @@ namespace Weather
     public class Forecast
     {
         public City City { get; set; }
-
-        public double dt { get; set; }
-        public List<CurWeather> list { get; set; }
+        
+        public List<CurWeather> List { get; set; }
 
     }
 
@@ -62,12 +61,16 @@ namespace Weather
     public class Forecast_weather
     {
         public string Date { get; set; }
-        public string City { get; set; }
-        public double Temp_Min { get; set; }
 
-        public double Temp_Max { get; set; }
+        public string City { get; set; }
+
+        public double Temp_min { get; set; }
+
+        public double Temp_max { get; set; }
+
         public double Wind_speed { get; set; }
-        public int Clouds { get; set; }       
+
+        public int Clouds { get; set; }      
 
     }
 }

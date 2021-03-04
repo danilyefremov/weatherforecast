@@ -36,7 +36,7 @@ namespace Weather.Controllers
                     var response = await client.GetAsync($"/data/2.5/weather?q={city}&appid=b8d8475d4cbc4e479aede93a43f8182d&units=metric");
                     response.EnsureSuccessStatusCode();
 
-                    System.DateTime dateTime = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
+                    var dateTime = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
 
                     var stringResult = await response.Content.ReadAsStringAsync();
                     var rawWeather = JsonConvert.DeserializeObject<CurWeather>(stringResult);
@@ -46,8 +46,7 @@ namespace Weather.Controllers
                         City = rawWeather.Name,
                         Temp = rawWeather.Main.Temp,
                         Wind_speed = rawWeather.Wind.Speed,                        
-                        Clouds = rawWeather.Clouds.All
-                        
+                        Clouds = rawWeather.Clouds.All                        
                     });
                 }
                 catch (HttpRequestException httpRequestException)
@@ -58,27 +57,38 @@ namespace Weather.Controllers
         }
 
         /// <response code="200">Success: getting forecast for 5 days</response>
-        /// <response code="500">Fail: wrong city name</response>   
+        /// <response code="400">Fail: wrong city name</response>
         [HttpGet("GetForecast")]
-        public IEnumerable<Forecast_weather> Forecast(string city)
+        public async Task<IActionResult> Forecast(string city)
         {
-            var testData = "http://api.openweathermap.org/data/2.5/forecast?q=" + city + "&appid=b8d8475d4cbc4e479aede93a43f8182d&units=metric";
-            var json = new WebClient().DownloadString(testData);
-            var result = JsonConvert.DeserializeObject<Forecast>(json);
-            System.DateTime dateTime = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
-
-            return Enumerable.Range(0, 5).Select(index => new Forecast_weather
+            using (var client = new HttpClient())
             {
-                Date = dateTime.AddSeconds(result.list[index * 8].dt).ToString("yyyy-MM-dd"),
-                City = result.City.Name,
-                Temp_Min = result.list[index * 8].Main.Temp_min,
-                Temp_Max = result.list[index * 8].Main.Temp_max,
-                Wind_speed = result.list[index * 8].Wind.Speed,
-                Clouds = result.list[index * 8].Clouds.All                
-            })
-            .ToArray();
+                try
+                {
+                    client.BaseAddress = new Uri("http://api.openweathermap.org");
+                    var response = await client.GetAsync($"/data/2.5/forecast?q={city}&appid=b8d8475d4cbc4e479aede93a43f8182d&units=metric");
+                    response.EnsureSuccessStatusCode();
+                    var stringResult = await response.Content.ReadAsStringAsync();
+                    var rawWeather = JsonConvert.DeserializeObject<Forecast>(stringResult);
+                    var dateTime = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
+
+                    return Ok(Enumerable.Range(0, 5).Select(index => new Forecast_weather
+                    {
+                        Date = dateTime.AddSeconds(rawWeather.List[index * 8].dt).ToString("yyyy-MM-dd"),
+                        City = rawWeather.City.Name,
+                        Temp_min = rawWeather.List[index * 8].Main.Temp_min,
+                        Temp_max = rawWeather.List[index * 8].Main.Temp_max,
+                        Wind_speed = rawWeather.List[index * 8].Wind.Speed,
+                        Clouds = rawWeather.List[index * 8].Clouds.All
+                    })
+                    .ToArray());                
+                }
+                catch (HttpRequestException httpRequestException)
+                {
+                    return BadRequest($"Error getting weather from OpenWeather: {httpRequestException.Message}");
+                }
+            }
         }
-        
     }
 
 }
